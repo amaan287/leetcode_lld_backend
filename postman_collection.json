@@ -1,0 +1,545 @@
+{
+	"info": {
+		"name": "DSA & LLD Learning Platform API",
+		"description": "Complete API collection for testing the DSA and LLD Learning Platform backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3001",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"Test User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Google OAuth",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"googleId\": \"123456789\",\n  \"email\": \"google@example.com\",\n  \"name\": \"Google User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/google",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "google"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "DSA",
+			"item": [
+				{
+					"name": "Lists",
+					"item": [
+						{
+							"name": "Get Public Lists",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists/public",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists", "public"]
+								}
+							}
+						},
+						{
+							"name": "Create List",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"My DSA List\",\n  \"isPublic\": false\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists"]
+								}
+							}
+						},
+						{
+							"name": "Get My Lists",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists"]
+								}
+							}
+						},
+						{
+							"name": "Get List by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists/:id",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "LIST_ID_HERE"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Update List",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated List Name\",\n  \"isPublic\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists/:id",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "LIST_ID_HERE"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Delete List",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists/:id",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "LIST_ID_HERE"
+										}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Problems",
+					"item": [
+						{
+							"name": "Add Problem to List",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"problemId\": \"PROBLEM_ID_HERE\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists/:id/problems",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists", ":id", "problems"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "LIST_ID_HERE"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Remove Problem from List",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists/:id/problems/:problemId",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists", ":id", "problems", ":problemId"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "LIST_ID_HERE"
+										},
+										{
+											"key": "problemId",
+											"value": "PROBLEM_ID_HERE"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Toggle Problem Status",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"isCompleted\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/dsa/lists/:id/problems/:problemId/toggle",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "lists", ":id", "problems", ":problemId", "toggle"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "LIST_ID_HERE"
+										},
+										{
+											"key": "problemId",
+											"value": "PROBLEM_ID_HERE"
+										}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Search",
+					"item": [
+						{
+							"name": "Search by Company",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"companyName\": \"Google\",\n  \"role\": \"SDE\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/dsa/search/company",
+									"host": ["{{base_url}}"],
+									"path": ["api", "dsa", "search", "company"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "LLD",
+			"item": [
+				{
+					"name": "Questions",
+					"item": [
+						{
+							"name": "Get All Questions",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/lld/questions?category=&difficulty=",
+									"host": ["{{base_url}}"],
+									"path": ["api", "lld", "questions"],
+									"query": [
+										{
+											"key": "category",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "difficulty",
+											"value": "",
+											"disabled": true
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Questions with Filters",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/lld/questions?category=System Design&difficulty=Medium",
+									"host": ["{{base_url}}"],
+									"path": ["api", "lld", "questions"],
+									"query": [
+										{
+											"key": "category",
+											"value": "System Design"
+										},
+										{
+											"key": "difficulty",
+											"value": "Medium"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Question by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/lld/questions/:id",
+									"host": ["{{base_url}}"],
+									"path": ["api", "lld", "questions", ":id"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "QUESTION_ID_HERE"
+										}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Answers",
+					"item": [
+						{
+							"name": "Submit Answer for Rating",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"answer\": \"Here is my solution:\\n\\n1. I would create a ParkingLot class with slots\\n2. Each slot can have a vehicle or be empty\\n3. I would use a HashMap to track vehicle positions\\n4. Methods: park(), unpark(), findAvailableSlot()\\n5. Handle edge cases like full parking lot\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/lld/questions/:id/rate",
+									"host": ["{{base_url}}"],
+									"path": ["api", "lld", "questions", ":id", "rate"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "QUESTION_ID_HERE"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get My Answers",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/lld/answers",
+									"host": ["{{base_url}}"],
+									"path": ["api", "lld", "answers"]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
+

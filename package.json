@@ -1,0 +1,29 @@
+{
+  "name": "backend",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts",
+    "import:lld": "bun run scripts/importLLD.ts"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/bun": "latest",
+    "@types/jsonwebtoken": "^9.0.10"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "backend": ".",
+    "bcrypt": "^6.0.0",
+    "hono": "^4.11.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.0.0",
+    "openai": "^6.15.0",
+    "zod": "^4.3.4"
+  }
+}
