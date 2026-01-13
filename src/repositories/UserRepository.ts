@@ -1,6 +1,6 @@
 import { ObjectId, Collection } from 'mongodb';
 import { getDatabase } from '../config/database';
-import { User } from '../models/User';
+import type { User } from '../models/User';
 
 export class UserRepository {
   private getCollection(): Collection<User> {
@@ -20,7 +20,7 @@ export class UserRepository {
     return this.getCollection().findOne({ _id: objectId });
   }
 
-  async create(user: Omit<User, '_id'>): Promise<User> {
+  async create(user: Omit<User, '_id' | 'createdAt'>): Promise<User> {
     const result = await this.getCollection().insertOne({
       ...user,
       createdAt: new Date(),

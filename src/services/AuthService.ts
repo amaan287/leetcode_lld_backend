@@ -1,8 +1,8 @@
 import bcrypt from 'bcrypt';
 import { UserRepository } from '../repositories/UserRepository';
-import { User } from '../models/User';
+import type { User } from '../models/User';
 import { AppError } from '../utils/errors';
-import { generateToken, AuthUser } from '../utils/jwt';
+import { generateToken, type AuthUser } from '../utils/jwt';
 
 export class AuthService {
   constructor(private userRepository: UserRepository) {}
@@ -47,7 +47,11 @@ export class AuthService {
       const existingUser = await this.userRepository.findByEmail(email);
       if (existingUser) {
         // Link Google account
-        user = await this.userRepository.update(existingUser._id!, { googleId });
+        const updatedUser = await this.userRepository.update(existingUser._id!, { googleId });
+        if (!updatedUser) {
+          throw new AppError(500, 'Failed to link Google account', 'UPDATE_FAILED');
+        }
+        user = updatedUser;
       } else {
         // Create new user
         user = await this.userRepository.create({

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "bun run src/index.ts",
-    "import:lld": "bun run scripts/importLLD.ts"
+    "build": "echo 'No build needed - Vercel handles TypeScript directly'",
+    "import:lld": "bun run scripts/importLLD.ts",
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

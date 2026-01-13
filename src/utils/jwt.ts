@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { getEnv } from '../config/env';
-import { AuthUser } from '../middleware/auth';
+
+export interface AuthUser {
+  userId: string;
+  email: string;
+}
 
 export function generateToken(user: AuthUser): string {
   const env = getEnv();

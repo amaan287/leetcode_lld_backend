@@ -1,7 +1,7 @@
 import { ObjectId, Collection } from 'mongodb';
 import { getDatabase } from '../config/database';
-import { LLDQuestion } from '../models/LLDQuestion';
-import { LLDAnswer } from '../models/LLDAnswer';
+import type { LLDQuestion } from '../models/LLDQuestion';
+import type { LLDAnswer } from '../models/LLDAnswer';
 
 export class LLDRepository {
   private getQuestionsCollection(): Collection<LLDQuestion> {
@@ -38,7 +38,7 @@ export class LLDRepository {
   }
 
   // Answer operations
-  async createAnswer(answer: Omit<LLDAnswer, '_id'>): Promise<LLDAnswer> {
+  async createAnswer(answer: Omit<LLDAnswer, '_id' | 'submittedAt'>): Promise<LLDAnswer> {
     const result = await this.getAnswersCollection().insertOne({
       ...answer,
       submittedAt: new Date(),

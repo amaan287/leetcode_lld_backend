@@ -50,7 +50,7 @@ export class LLDController {
       });
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(createErrorResponse(error), error.statusCode);
+        return c.json(createErrorResponse(error), error.statusCode as any);
       }
       return c.json(createErrorResponse(error), 500);
     }
@@ -76,10 +76,10 @@ export class LLDController {
       }, 201);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return c.json(createErrorResponse(new AppError(400, error.errors[0].message, 'VALIDATION_ERROR')), 400);
+        return c.json(createErrorResponse(new AppError(400, error.issues[0]?.message || 'Validation error', 'VALIDATION_ERROR')), 400);
       }
       if (error instanceof AppError) {
-        return c.json(createErrorResponse(error), error.statusCode);
+        return c.json(createErrorResponse(error), error.statusCode as any);
       }
       return c.json(createErrorResponse(error), 500);
     }

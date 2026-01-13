@@ -1,12 +1,8 @@
-import { Context, Next } from 'hono';
+import type { Context, Next } from 'hono';
 import jwt from 'jsonwebtoken';
 import { getEnv } from '../config/env';
 import { AppError } from '../utils/errors';
-
-export interface AuthUser {
-  userId: string;
-  email: string;
-}
+import type { AuthUser } from '../utils/jwt';
 
 declare module 'hono' {
   interface ContextVariableMap {

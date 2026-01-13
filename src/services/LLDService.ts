@@ -1,6 +1,7 @@
 import { LLDRepository } from '../repositories/LLDRepository';
 import { LLDRatingService } from './LLDRatingService';
-import { LLDQuestion, LLDAnswer } from '../models/LLDQuestion';
+import type { LLDQuestion } from '../models/LLDQuestion';
+import type { LLDAnswer } from '../models/LLDAnswer';
 import { AppError } from '../utils/errors';
 
 export class LLDService {
