@@ -16,7 +16,29 @@ const env = getEnv();
 
 // CORS middleware - Allow all origins in development, specific origin in production
 app.use('*', cors({
-  origin: env.FRONTEND_URL === '*' ? '*' : env.FRONTEND_URL,
+  origin: (origin) => {
+    // Allow all origins if FRONTEND_URL is '*'
+    if (env.FRONTEND_URL === '*') {
+      return origin || '*';
+    }
+    
+    // Normalize URLs by removing trailing slashes for comparison
+    const allowedOrigins = env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, ''));
+    const normalizedOrigin = origin?.replace(/\/$/, '') || '';
+    
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.includes(normalizedOrigin)) {
+      return normalizedOrigin;
+    }
+    
+    // For development/testing, also allow localhost
+    if (normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1')) {
+      return normalizedOrigin;
+    }
+    
+    // Default to first allowed origin if no match
+    return allowedOrigins[0] || '*';
+  },
   credentials: true,
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowHeaders: ['Content-Type', 'Authorization'],
@@ -27,6 +49,16 @@ app.use('*', cors({
 // Health check
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Debug endpoint to check CORS configuration
+app.get('/api/debug/cors', (c) => {
+  const origin = c.req.header('origin') || 'no-origin';
+  return c.json({ 
+    allowedOrigins: env.FRONTEND_URL,
+    requestOrigin: origin,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // API routes
