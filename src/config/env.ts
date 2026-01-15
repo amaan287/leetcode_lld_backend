@@ -7,6 +7,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   PORT: z.string().default('3000'),
+  FRONTEND_URL: z.string().default('*'),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -19,6 +20,7 @@ export function getEnv(): Env {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     PORT: process.env.PORT || '3000',
+    FRONTEND_URL: process.env.FRONTEND_URL || '*',
   };
 
   try {

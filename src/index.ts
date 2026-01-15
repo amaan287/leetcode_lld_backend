@@ -11,10 +11,17 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 const app = new Hono();
 
-// CORS middleware
+// Get environment variables
+const env = getEnv();
+
+// CORS middleware - Allow all origins in development, specific origin in production
 app.use('*', cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: env.FRONTEND_URL === '*' ? '*' : env.FRONTEND_URL,
   credentials: true,
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Length', 'X-Requested-With'],
+  maxAge: 600,
 }));
 
 // Health check
@@ -48,7 +55,6 @@ async function start() {
   try {
     await connectDatabase();
     
-    const env = getEnv();
     const port = parseInt(env.PORT, 10);
 
     serve({
