@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
-import { getEnv } from '../config/env';
+import { withTimeout, retry } from '../utils/resilience';
+import { ENV } from '../config/env';
 import { DSARepository } from '../repositories/DSARepository';
 import type { DSAProblem } from '../models/DSAProblem';
 
@@ -10,9 +11,12 @@ interface SimilarityResult {
 
 export class EmbeddingSearchService {
   private openai: OpenAI;
+  private failureCount = 0;
+  private circuitOpen = false;
+  private lastFailure = 0;
 
   constructor(private dsaRepository: DSARepository) {
-    const env = getEnv();
+    const env = ENV;
     this.openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
   }
 
@@ -42,12 +46,27 @@ export class EmbeddingSearchService {
   }
 
   async searchByCompany(companyName: string, role: string = 'SDE'): Promise<DSAProblem[]> {
+    if (this.circuitOpen && Date.now() - this.lastFailure < 15000) {
+      throw new Error('Embedding service temporarily unavailable');
+    }
     const searchQuery = `${companyName} ${role} interview questions software engineering coding problems`;
     
     // Create embedding for the search query
-    const embeddingResponse = await this.openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: [searchQuery],
+    const embeddingResponse = await retry(
+      () =>
+        withTimeout(
+          this.openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: [searchQuery],
+          }),
+          8000
+        ),
+      3
+    ).catch(err => {
+      this.failureCount++;
+      this.lastFailure = Date.now();
+      if (this.failureCount >= 5) this.circuitOpen = true;
+      throw err;
     });
 
     const firstEmbedding = embeddingResponse.data[0];
@@ -84,13 +103,28 @@ export class EmbeddingSearchService {
    * Example: "swiggy sde1" -> finds top 100 problems asked in Swiggy SDE1 interviews
    */
   async searchByQuery(userQuery: string, limit: number = 100): Promise<DSAProblem[]> {
+    if (this.circuitOpen && Date.now() - this.lastFailure < 15000) {
+      throw new Error('Embedding service temporarily unavailable');
+    }
     // Use LLM to generate an optimized search query from user input
     const optimizedQuery = await this.generateSearchQuery(userQuery);
     
     // Create embedding for the optimized search query
-    const embeddingResponse = await this.openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: [optimizedQuery],
+    const embeddingResponse = await retry(
+      () =>
+        withTimeout(
+          this.openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: [optimizedQuery],
+          }),
+          8000
+        ),
+      3
+    ).catch(err => {
+      this.failureCount++;
+      this.lastFailure = Date.now();
+      if (this.failureCount >= 5) this.circuitOpen = true;
+      throw err;
     });
 
     const firstEmbedding = embeddingResponse.data[0];
@@ -147,8 +181,11 @@ Generate an optimized search query that includes:
 Return ONLY the optimized search query, nothing else.`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await retry(
+        () =>
+          withTimeout(
+            this.openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
@@ -160,8 +197,12 @@ Return ONLY the optimized search query, nothing else.`;
           },
         ],
         temperature: 0.3,
-        max_tokens: 100,
-      });
+              max_tokens: 100,
+            }),
+            8000
+          ),
+        3
+      );
       console.log('completion', completion);
       const optimizedQuery = completion.choices[0]?.message?.content?.trim();
       console.log('optimizedQuery', optimizedQuery);
@@ -204,8 +245,11 @@ ${problemTitles}
 Return ONLY a comma-separated list of numbers (1-${candidates.length}) representing the most relevant problems in order of relevance. Return exactly ${limit} numbers.`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await retry(
+        () =>
+          withTimeout(
+            this.openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
@@ -217,8 +261,12 @@ Return ONLY a comma-separated list of numbers (1-${candidates.length}) represent
           },
         ],
         temperature: 0.2,
-        max_tokens: 200,
-      });
+              max_tokens: 200,
+            }),
+            8000
+          ),
+        3
+      );
 
       const rankingText = completion.choices[0]?.message?.content?.trim();
       if (!rankingText) {
@@ -265,4 +313,3 @@ Return ONLY a comma-separated list of numbers (1-${candidates.length}) represent
     return problems.slice(0, limit);
   }
 }
-

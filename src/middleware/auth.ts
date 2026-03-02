@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono';
 import jwt from 'jsonwebtoken';
-import { getEnv } from '../config/env';
+import { ENV } from '../config/env';
 import { AppError } from '../utils/errors';
 import type { AuthUser } from '../utils/jwt';
 
@@ -18,7 +18,7 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 
   const token = authHeader.substring(7);
-  const env = getEnv();
+  const env = ENV;
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as AuthUser;

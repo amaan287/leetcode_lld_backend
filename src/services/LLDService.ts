@@ -8,7 +8,7 @@ export class LLDService {
   constructor(
     private lldRepository: LLDRepository,
     private ratingService: LLDRatingService
-  ) {}
+  ) { }
 
   async getQuestions(filters?: { category?: string; difficulty?: string }): Promise<LLDQuestion[]> {
     return this.lldRepository.findQuestions(filters);
@@ -60,6 +60,19 @@ export class LLDService {
 
   async getUserAnswers(userId: string): Promise<LLDAnswer[]> {
     return this.lldRepository.findAnswersByUser(userId);
+  }
+
+  async checkAnswer(questionId: string, answer: string): Promise<{ valid: boolean; errors: string[] }> {
+    const question = await this.lldRepository.findQuestionById(questionId);
+    if (!question) {
+      throw new AppError(404, 'Question not found', 'QUESTION_NOT_FOUND');
+    }
+
+    return this.ratingService.checkSyntax(
+      question.title,
+      question.scenario,
+      answer
+    );
   }
 }
 

@@ -1,107 +1,122 @@
 import type { Context } from 'hono';
 import { z } from 'zod';
 import { LLDService } from '../services/LLDService';
-import { AppError, createErrorResponse } from '../utils/errors';
+import { AppError } from '../utils/errors';
+import { successResponse } from '../utils/response';
+import { getCache, setCache } from '../utils/cache';
 
 const submitAnswerSchema = z.object({
   answer: z.string().min(1),
 });
 
 export class LLDController {
-  constructor(private lldService: LLDService) {}
+  constructor(private lldService: LLDService) { }
 
-  async getQuestions(c: Context) {
-    try {
-      const category = c.req.query('category');
-      const difficulty = c.req.query('difficulty');
+  getQuestions = async (c: Context) => {
+    const category = c.req.query('category') || 'all';
+    const difficulty = c.req.query('difficulty') || 'all';
 
-      const questions = await this.lldService.getQuestions({
-        category: category || undefined,
-        difficulty: difficulty || undefined,
-      });
-
-      return c.json(questions.map(q => ({
-        _id: q._id?.toString(),
-        title: q.title,
-        scenario: q.scenario,
-        description: q.description,
-        category: q.category,
-        difficulty: q.difficulty,
-        createdAt: q.createdAt,
-      })));
-    } catch (error) {
-      return c.json(createErrorResponse(error), 500);
+    const cacheKey = `lld_questions_${category}_${difficulty}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return c.json(successResponse(cached, c.get('requestId')));
     }
-  }
 
-  async getQuestion(c: Context) {
-    try {
-      const questionId = c.req.param('id');
-      const question = await this.lldService.getQuestionById(questionId);
+    const questions = await this.lldService.getQuestions({
+      category: category === 'all' ? undefined : category,
+      difficulty: difficulty === 'all' ? undefined : difficulty,
+    });
 
-      return c.json({
-        _id: question._id?.toString(),
-        title: question.title,
-        scenario: question.scenario,
-        description: question.description,
-        category: question.category,
-        difficulty: question.difficulty,
-        createdAt: question.createdAt,
-      });
-    } catch (error) {
-      if (error instanceof AppError) {
-        return c.json(createErrorResponse(error), error.statusCode as any);
-      }
-      return c.json(createErrorResponse(error), 500);
-    }
-  }
+    const formatted = questions.map(q => ({
+      _id: q._id?.toString(),
+      title: q.title,
+      scenario: q.scenario,
+      description: q.description,
+      category: q.category,
+      difficulty: q.difficulty,
+      createdAt: q.createdAt,
+    }));
 
-  async submitAnswer(c: Context) {
-    try {
-      const questionId = c.req.param('id');
-      const user = c.get('user');
-      const body = await c.req.json();
-      const data = submitAnswerSchema.parse(body);
+    setCache(cacheKey, formatted, 60000);
 
-      const answer = await this.lldService.submitAnswer(user.userId, questionId, data.answer);
+    return c.json(successResponse(formatted, c.get('requestId')));
+  };
 
-      return c.json({
-        _id: answer._id?.toString(),
-        userId: answer.userId.toString(),
-        questionId: answer.questionId.toString(),
-        answer: answer.answer,
-        rating: answer.rating,
-        feedback: answer.feedback,
-        submittedAt: answer.submittedAt,
-      }, 201);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return c.json(createErrorResponse(new AppError(400, error.issues[0]?.message || 'Validation error', 'VALIDATION_ERROR')), 400);
-      }
-      if (error instanceof AppError) {
-        return c.json(createErrorResponse(error), error.statusCode as any);
-      }
-      return c.json(createErrorResponse(error), 500);
-    }
-  }
+  getQuestion = async (c: Context) => {
+    const questionId = c.req.param('id');
+    const question = await this.lldService.getQuestionById(questionId);
 
-  async getMyAnswers(c: Context) {
-    try {
-      const user = c.get('user');
-      const answers = await this.lldService.getUserAnswers(user.userId);
+    return c.json(
+      successResponse(
+        {
+          _id: question._id?.toString(),
+          title: question.title,
+          scenario: question.scenario,
+          description: question.description,
+          category: question.category,
+          difficulty: question.difficulty,
+          createdAt: question.createdAt,
+        },
+        c.get('requestId')
+      )
+    );
+  };
 
-      return c.json(answers.map(a => ({
-        _id: a._id?.toString(),
-        userId: a.userId.toString(),
-        questionId: a.questionId.toString(),
-        answer: a.answer,
-        rating: a.rating,
-        feedback: a.feedback,
-        submittedAt: a.submittedAt,
-      })));
-    } catch (error) {
-      return c.json(createErrorResponse(error), 500);
-    }
-  }
+  submitAnswer = async (c: Context) => {
+    const questionId = c.req.param('id');
+    const user = c.get('user');
+    const body = await c.req.json();
+    const data = submitAnswerSchema.parse(body);
+
+    const answer = await this.lldService.submitAnswer(
+      user.userId,
+      questionId,
+      data.answer
+    );
+
+    return c.json(
+      successResponse(
+        {
+          _id: answer._id?.toString(),
+          userId: answer.userId.toString(),
+          questionId: answer.questionId.toString(),
+          answer: answer.answer,
+          rating: answer.rating,
+          feedback: answer.feedback,
+          submittedAt: answer.submittedAt,
+        },
+        c.get('requestId')
+      ),
+      201
+    );
+  };
+
+  getMyAnswers = async (c: Context) => {
+    const user = c.get('user');
+    const answers = await this.lldService.getUserAnswers(user.userId);
+
+    return c.json(
+      successResponse(
+        answers.map(a => ({
+          _id: a._id?.toString(),
+          userId: a.userId.toString(),
+          questionId: a.questionId.toString(),
+          answer: a.answer,
+          rating: a.rating,
+          feedback: a.feedback,
+          submittedAt: a.submittedAt,
+        })),
+        c.get('requestId')
+      )
+    );
+  };
+
+  checkCode = async (c: Context) => {
+    const questionId = c.req.param('id');
+    const body = await c.req.json();
+    const data = submitAnswerSchema.parse(body);
+
+    const result = await this.lldService.checkAnswer(questionId, data.answer);
+    return c.json(successResponse(result, c.get('requestId')));
+  };
 }
-

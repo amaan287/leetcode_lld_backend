@@ -3,6 +3,7 @@ import { getDatabase } from '../config/database';
 import type { DSAProblem } from '../models/DSAProblem';
 import type { DSAList as DSAListModel } from '../models/DSAList';
 import type { UserProblemStatus as UserProblemStatusModel } from '../models/UserProblemStatus';
+import type { DSASolution } from '../models/DSASolution';
 
 export class DSARepository {
   private getProblemsCollection(): Collection<DSAProblem> {
@@ -17,18 +18,22 @@ export class DSARepository {
     return getDatabase().collection<UserProblemStatusModel>('user_problem_status');
   }
 
+  private getSolutionsCollection(): Collection<DSASolution> {
+    return getDatabase().collection<DSASolution>('dsa_solutions');
+  }
+
   // Problem operations
   async findProblemById(id: string | ObjectId): Promise<DSAProblem | null> {
     try {
       const objectId = typeof id === 'string' ? new ObjectId(id) : id;
       const problem = await this.getProblemsCollection().findOne({ _id: objectId });
-      
+
       // If not found by _id, try searching by frontendQuestionId as fallback
       if (!problem && typeof id === 'string') {
         console.log('Problem not found by _id, trying frontendQuestionId:', id);
         return this.getProblemsCollection().findOne({ frontendQuestionId: id });
       }
-      
+
       return problem;
     } catch (error) {
       // If ObjectId conversion fails, try searching by frontendQuestionId
@@ -114,10 +119,10 @@ export class DSARepository {
   async addProblemToList(listId: string | ObjectId, problemId: string | ObjectId): Promise<boolean> {
     const listObjectId = typeof listId === 'string' ? new ObjectId(listId) : listId;
     const problemObjectId = typeof problemId === 'string' ? new ObjectId(problemId) : problemId;
-    
+
     const result = await this.getListsCollection().updateOne(
       { _id: listObjectId },
-      { 
+      {
         $addToSet: { problemIds: problemObjectId },
         $set: { updatedAt: new Date() }
       }
@@ -128,10 +133,10 @@ export class DSARepository {
   async removeProblemFromList(listId: string | ObjectId, problemId: string | ObjectId): Promise<boolean> {
     const listObjectId = typeof listId === 'string' ? new ObjectId(listId) : listId;
     const problemObjectId = typeof problemId === 'string' ? new ObjectId(problemId) : problemId;
-    
+
     const result = await this.getListsCollection().updateOne(
       { _id: listObjectId },
-      { 
+      {
         $pull: { problemIds: problemObjectId },
         $set: { updatedAt: new Date() }
       }
@@ -144,7 +149,7 @@ export class DSARepository {
     const userObjectId = typeof userId === 'string' ? new ObjectId(userId) : userId;
     const problemObjectId = typeof problemId === 'string' ? new ObjectId(problemId) : problemId;
     const listObjectId = typeof listId === 'string' ? new ObjectId(listId) : listId;
-    
+
     return this.getStatusCollection().findOne({
       userId: userObjectId,
       problemId: problemObjectId,
@@ -167,8 +172,8 @@ export class DSARepository {
     if (existing) {
       await this.getStatusCollection().updateOne(
         { _id: existing._id },
-        { 
-          $set: { 
+        {
+          $set: {
             isCompleted,
             checkedAt: new Date(),
           }
@@ -190,9 +195,41 @@ export class DSARepository {
   async getStatusesForList(userId: string | ObjectId, listId: string | ObjectId): Promise<UserProblemStatusModel[]> {
     const userObjectId = typeof userId === 'string' ? new ObjectId(userId) : userId;
     const listObjectId = typeof listId === 'string' ? new ObjectId(listId) : listId;
-    
+
     return this.getStatusCollection()
       .find({ userId: userObjectId, listId: listObjectId })
+      .toArray();
+  }
+
+  // Solution operations
+  async createSolution(solution: Omit<DSASolution, '_id' | 'submittedAt'>): Promise<DSASolution> {
+    const result = await this.getSolutionsCollection().insertOne({
+      ...solution,
+      submittedAt: new Date(),
+    } as DSASolution);
+    return (await this.getSolutionsCollection().findOne({ _id: result.insertedId }))!;
+  }
+
+  async updateSolutionRating(id: string | ObjectId, rating: number, feedback: string): Promise<DSASolution | null> {
+    const objectId = typeof id === 'string' ? new ObjectId(id) : id;
+    await this.getSolutionsCollection().updateOne(
+      { _id: objectId },
+      { $set: { rating, feedback } }
+    );
+    return this.getSolutionsCollection().findOne({ _id: objectId });
+  }
+
+  async findSolutionById(id: string | ObjectId): Promise<DSASolution | null> {
+    const objectId = typeof id === 'string' ? new ObjectId(id) : id;
+    return this.getSolutionsCollection().findOne({ _id: objectId });
+  }
+
+  async findSolutionsByUserAndProblem(userId: string | ObjectId, problemId: string | ObjectId): Promise<DSASolution[]> {
+    const userObjectId = typeof userId === 'string' ? new ObjectId(userId) : userId;
+    const problemObjectId = typeof problemId === 'string' ? new ObjectId(problemId) : problemId;
+    return this.getSolutionsCollection()
+      .find({ userId: userObjectId, problemId: problemObjectId })
+      .sort({ submittedAt: -1 })
       .toArray();
   }
 }

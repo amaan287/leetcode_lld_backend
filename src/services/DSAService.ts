@@ -2,9 +2,14 @@ import { ObjectId } from 'mongodb';
 import { DSARepository } from '../repositories/DSARepository';
 import type { DSAList } from '../models/DSAList';
 import { AppError } from '../utils/errors';
+import { DSARatingService } from './DSARatingService';
+import type { DSASolution } from '../models/DSASolution';
 
 export class DSAService {
-  constructor(private dsaRepository: DSARepository) {}
+  constructor(
+    private dsaRepository: DSARepository,
+    private ratingService: DSARatingService
+  ) { }
 
   async createList(userId: string, name: string, isPublic: boolean = false): Promise<DSAList> {
     return this.dsaRepository.createList({
@@ -133,7 +138,7 @@ export class DSAService {
   }> {
     const list = await this.getListById(listId, userId);
     const problems = await this.dsaRepository.findProblemsByIds(list.problemIds);
-    
+
     let statuses: any[] = [];
     if (userId) {
       statuses = await this.dsaRepository.getStatusesForList(userId, listId);
@@ -166,6 +171,60 @@ export class DSAService {
       throw new AppError(404, 'Problem not found', 'PROBLEM_NOT_FOUND');
     }
     return problem;
+  }
+
+  async submitSolution(
+    userId: string,
+    problemId: string,
+    solution: string,
+    language: string
+  ): Promise<DSASolution> {
+    const problem = await this.getProblemById(problemId);
+
+    // Create solution first
+    const solutionDoc = await this.dsaRepository.createSolution({
+      userId: new ObjectId(userId),
+      problemId: new ObjectId(problemId),
+      solution,
+      language,
+    });
+
+    // Rate the solution using LLM
+    try {
+      const ratingResult = await this.ratingService.rateSolution(
+        problem.title,
+        problem.description || problem.title,
+        solution,
+        language
+      );
+
+      // Update solution with rating and feedback
+      await this.dsaRepository.updateSolutionRating(
+        solutionDoc._id!,
+        ratingResult.rating,
+        ratingResult.feedback
+      );
+
+      return (await this.dsaRepository.findSolutionById(solutionDoc._id!))!;
+    } catch (error) {
+      console.error('Failed to rate DSA solution:', error);
+      return solutionDoc;
+    }
+  }
+
+  async checkSolution(
+    problemId: string,
+    solution: string,
+    language: string
+  ): Promise<{ valid: boolean; errors: string[] }> {
+    const problem = await this.getProblemById(problemId);
+
+    return this.ratingService.checkSyntax(
+      problem.title,
+      problem.description || problem.title,
+      solution,
+      language
+    );
   }
 }
 

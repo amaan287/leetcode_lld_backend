@@ -4,6 +4,7 @@ import { LLDService } from '../services/LLDService';
 import { LLDRatingService } from '../services/LLDRatingService';
 import { LLDRepository } from '../repositories/LLDRepository';
 import { authMiddleware } from '../middleware/auth';
+import { asyncHandler } from '../middleware/asyncHandler';
 
 export function createLLDRoutes() {
   const router = new Hono();
@@ -13,13 +14,13 @@ export function createLLDRoutes() {
   const lldController = new LLDController(lldService);
 
   // Public routes
-  router.get('/questions', (c) => lldController.getQuestions(c));
-  router.get('/questions/:id', (c) => lldController.getQuestion(c));
+  router.get('/questions', asyncHandler(lldController.getQuestions));
+  router.get('/questions/:id', asyncHandler(lldController.getQuestion));
 
   // Protected routes
-  router.post('/questions/:id/rate', authMiddleware, (c) => lldController.submitAnswer(c));
-  router.get('/answers', authMiddleware, (c) => lldController.getMyAnswers(c));
+  router.post('/questions/:id/rate', authMiddleware, asyncHandler(lldController.submitAnswer));
+  router.post('/questions/:id/check', authMiddleware, asyncHandler(lldController.checkCode));
+  router.get('/answers', authMiddleware, asyncHandler(lldController.getMyAnswers));
 
   return router;
 }
-

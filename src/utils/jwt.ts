@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { getEnv } from '../config/env';
+import { ENV } from '../config/env';
 
 export interface AuthUser {
   userId: string;
@@ -7,12 +7,9 @@ export interface AuthUser {
 }
 
 export function generateToken(user: AuthUser): string {
-  const env = getEnv();
-  return jwt.sign(user, env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(user, ENV.JWT_SECRET, { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): AuthUser {
-  const env = getEnv();
-  return jwt.verify(token, env.JWT_SECRET) as AuthUser;
+  return jwt.verify(token, ENV.JWT_SECRET) as AuthUser;
 }
-

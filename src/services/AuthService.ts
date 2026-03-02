@@ -1,11 +1,15 @@
 import bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import { UserRepository } from '../repositories/UserRepository';
 import type { User } from '../models/User';
 import { AppError } from '../utils/errors';
 import { generateToken, type AuthUser } from '../utils/jwt';
+import { ENV } from '../config/env';
 
 export class AuthService {
   constructor(private userRepository: UserRepository) {}
+
+  private googleClient = new OAuth2Client(ENV.GOOGLE_CLIENT_ID);
 
   async register(email: string, password: string, name: string): Promise<{ user: User; token: string }> {
     const existingUser = await this.userRepository.findByEmail(email);
@@ -13,7 +17,8 @@ export class AuthService {
       throw new AppError(400, 'User already exists', 'USER_EXISTS');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const rounds = parseInt(ENV.BCRYPT_ROUNDS, 10);
+    const hashedPassword = await bcrypt.hash(password, rounds);
     const user = await this.userRepository.create({
       email,
       password: hashedPassword,
@@ -39,21 +44,33 @@ export class AuthService {
     return { user, token };
   }
 
-  async loginWithGoogle(googleId: string, email: string, name: string): Promise<{ user: User; token: string }> {
+  async loginWithGoogle(idToken: string): Promise<{ user: User; token: string }> {
+    const ticket = await this.googleClient.verifyIdToken({
+      idToken,
+      audience: ENV.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.sub || !payload.email) {
+      throw new AppError(401, 'Invalid Google token', 'INVALID_GOOGLE_TOKEN');
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email;
+    const name = payload.name || '';
+
     let user = await this.userRepository.findByGoogleId(googleId);
-    
+
     if (!user) {
-      // Check if user exists with email but no Google ID
       const existingUser = await this.userRepository.findByEmail(email);
       if (existingUser) {
-        // Link Google account
         const updatedUser = await this.userRepository.update(existingUser._id!, { googleId });
         if (!updatedUser) {
           throw new AppError(500, 'Failed to link Google account', 'UPDATE_FAILED');
         }
         user = updatedUser;
       } else {
-        // Create new user
         user = await this.userRepository.create({
           email,
           name,
@@ -66,4 +83,3 @@ export class AuthService {
     return { user, token };
   }
 }
-

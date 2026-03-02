@@ -14,7 +14,14 @@ export interface DSAProblem {
   status?: string;
   title: string;
   titleSlug: string;
-  topicTags?: Array<{ name?: string; slug?: string; [key: string]: any }>;
+  description?: string;
+  examples?: Array<{
+    input: string;
+    output: string;
+    explanation?: string;
+  }>;
+  constraints?: string[];
+  topicTags?: Array<{ name?: string; slug?: string;[key: string]: any }>;
   updatedAt?: Date;
   title_embeddings_OAI?: number[];
 }

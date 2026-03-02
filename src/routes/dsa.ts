@@ -1,35 +1,39 @@
 import { Hono } from 'hono';
 import { DSAController } from '../controllers/DSAController';
 import { DSAService } from '../services/DSAService';
+import { DSARatingService } from '../services/DSARatingService';
 import { EmbeddingSearchService } from '../services/EmbeddingSearchService';
 import { DSARepository } from '../repositories/DSARepository';
 import { authMiddleware } from '../middleware/auth';
+import { asyncHandler } from '../middleware/asyncHandler';
 
 export function createDSARoutes() {
   const router = new Hono();
   const dsaRepository = new DSARepository();
-  const dsaService = new DSAService(dsaRepository);
+  const ratingService = new DSARatingService();
+  const dsaService = new DSAService(dsaRepository, ratingService);
   const embeddingService = new EmbeddingSearchService(dsaRepository);
   const dsaController = new DSAController(dsaService, embeddingService);
 
   // Public routes
-  router.get('/lists/public', (c) => dsaController.getPublicLists(c));
+  router.get('/lists/public', asyncHandler(dsaController.getPublicLists));
 
   // Protected routes
-  router.post('/search/company', authMiddleware, (c) => dsaController.searchByCompany(c));
-  router.post('/search/query', authMiddleware, (c) => dsaController.searchByQuery(c));
-  router.post('/search/problems', authMiddleware, (c) => dsaController.searchProblems(c));
-  router.get('/problems', authMiddleware, (c) => dsaController.getProblems(c));
-  router.get('/problems/:id', authMiddleware, (c) => dsaController.getProblem(c));
-  router.post('/lists', authMiddleware, (c) => dsaController.createList(c));
-  router.get('/lists', authMiddleware, (c) => dsaController.getMyLists(c));
-  router.get('/lists/:id', authMiddleware, (c) => dsaController.getList(c));
-  router.put('/lists/:id', authMiddleware, (c) => dsaController.updateList(c));
-  router.delete('/lists/:id', authMiddleware, (c) => dsaController.deleteList(c));
-  router.post('/lists/:id/problems', authMiddleware, (c) => dsaController.addProblem(c));
-  router.delete('/lists/:id/problems/:problemId', authMiddleware, (c) => dsaController.removeProblem(c));
-  router.post('/lists/:id/problems/:problemId/toggle', authMiddleware, (c) => dsaController.toggleProblemStatus(c));
+  router.post('/search/company', authMiddleware, asyncHandler(dsaController.searchByCompany));
+  router.post('/search/query', authMiddleware, asyncHandler(dsaController.searchByQuery));
+  router.post('/search/problems', authMiddleware, asyncHandler(dsaController.searchProblems));
+  router.get('/problems', authMiddleware, asyncHandler(dsaController.getProblems));
+  router.get('/problems/:id', authMiddleware, asyncHandler(dsaController.getProblem));
+  router.post('/problems/:id/rate', authMiddleware, asyncHandler(dsaController.submitSolution));
+  router.post('/problems/:id/check', authMiddleware, asyncHandler(dsaController.checkCode));
+  router.post('/lists', authMiddleware, asyncHandler(dsaController.createList));
+  router.get('/lists', authMiddleware, asyncHandler(dsaController.getMyLists));
+  router.get('/lists/:id', authMiddleware, asyncHandler(dsaController.getList));
+  router.put('/lists/:id', authMiddleware, asyncHandler(dsaController.updateList));
+  router.delete('/lists/:id', authMiddleware, asyncHandler(dsaController.deleteList));
+  router.post('/lists/:id/problems', authMiddleware, asyncHandler(dsaController.addProblem));
+  router.delete('/lists/:id/problems/:problemId', authMiddleware, asyncHandler(dsaController.removeProblem));
+  router.post('/lists/:id/problems/:problemId/toggle', authMiddleware, asyncHandler(dsaController.toggleProblemStatus));
 
   return router;
 }
-
