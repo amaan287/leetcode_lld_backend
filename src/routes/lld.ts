@@ -16,6 +16,7 @@ export function createLLDRoutes() {
   // Public routes
   router.get('/questions', asyncHandler(lldController.getQuestions));
   router.get('/questions/:id', asyncHandler(lldController.getQuestion));
+  router.get('/questions/:id/solutions', authMiddleware, asyncHandler(lldController.getOfficialSolutions));
 
   // Protected routes
   router.post('/questions/:id/rate', authMiddleware, asyncHandler(lldController.submitAnswer));

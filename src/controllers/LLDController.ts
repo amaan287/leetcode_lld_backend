@@ -30,6 +30,7 @@ export class LLDController {
     const formatted = questions.map(q => ({
       _id: q._id?.toString(),
       title: q.title,
+      slug: q.slug,
       scenario: q.scenario,
       description: q.description,
       category: q.category,
@@ -51,6 +52,7 @@ export class LLDController {
         {
           _id: question._id?.toString(),
           title: question.title,
+          slug: question.slug,
           scenario: question.scenario,
           description: question.description,
           category: question.category,
@@ -118,5 +120,23 @@ export class LLDController {
 
     const result = await this.lldService.checkAnswer(questionId, data.answer);
     return c.json(successResponse(result, c.get('requestId')));
+  };
+
+  getOfficialSolutions = async (c: Context) => {
+    const questionId = c.req.param('id');
+    const solutions = await this.lldService.getOfficialSolutions(questionId);
+
+    return c.json(
+      successResponse(
+        solutions.map(s => ({
+          _id: s._id?.toString(),
+          questionId: s.questionId.toString(),
+          language: s.language,
+          content: s.content,
+          files: s.files,
+        })),
+        c.get('requestId')
+      )
+    );
   };
 }

@@ -2,6 +2,7 @@ import { LLDRepository } from '../repositories/LLDRepository';
 import { LLDRatingService } from './LLDRatingService';
 import type { LLDQuestion } from '../models/LLDQuestion';
 import type { LLDAnswer } from '../models/LLDAnswer';
+import type { LLDOfficialSolution } from '../models/LLDOfficialSolution';
 import { AppError } from '../utils/errors';
 
 export class LLDService {
@@ -12,6 +13,10 @@ export class LLDService {
 
   async getQuestions(filters?: { category?: string; difficulty?: string }): Promise<LLDQuestion[]> {
     return this.lldRepository.findQuestions(filters);
+  }
+
+  async getOfficialSolutions(questionId: string): Promise<LLDOfficialSolution[]> {
+    return this.lldRepository.findOfficialSolutionsByQuestionId(questionId);
   }
 
   async getQuestionById(questionId: string): Promise<LLDQuestion> {

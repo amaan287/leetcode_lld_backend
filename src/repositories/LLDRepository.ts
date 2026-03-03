@@ -2,6 +2,7 @@ import { ObjectId, Collection } from 'mongodb';
 import { getDatabase } from '../config/database';
 import type { LLDQuestion } from '../models/LLDQuestion';
 import type { LLDAnswer } from '../models/LLDAnswer';
+import type { LLDOfficialSolution } from '../models/LLDOfficialSolution';
 
 export class LLDRepository {
   private getQuestionsCollection(): Collection<LLDQuestion> {
@@ -10,6 +11,10 @@ export class LLDRepository {
 
   private getAnswersCollection(): Collection<LLDAnswer> {
     return getDatabase().collection<LLDAnswer>('lld_answers');
+  }
+
+  private getOfficialSolutionsCollection(): Collection<LLDOfficialSolution> {
+    return getDatabase().collection<LLDOfficialSolution>('lld_official_solutions');
   }
 
   // Question operations
@@ -35,6 +40,11 @@ export class LLDRepository {
       query.difficulty = filters.difficulty;
     }
     return this.getQuestionsCollection().find(query).toArray();
+  }
+
+  async findOfficialSolutionsByQuestionId(questionId: string | ObjectId): Promise<LLDOfficialSolution[]> {
+    const objectId = typeof questionId === 'string' ? new ObjectId(questionId) : questionId;
+    return this.getOfficialSolutionsCollection().find({ questionId: objectId }).toArray();
   }
 
   // Answer operations
